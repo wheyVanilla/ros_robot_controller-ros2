@@ -1,0 +1,7 @@
+vehicles:
+  - serial_number: "e6fa2a842d3ed36c"
+    name: "Rabot YYDS"
+    ip: "192.168.1.73"
+  - serial_number: "e6fb2a842d3ed36c"
+    name: "ghost"
+    ip: "192.168.1.74"

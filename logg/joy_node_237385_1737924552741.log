@@ -1,0 +1,2 @@
+[INFO] [1737924553.034519977] [joy_node]: Opened joystick: Xbox Series X Controller.  deadzone: 0.050000
+[INFO] [1737924633.285151849] [rclcpp]: signal_handler(signum=2)

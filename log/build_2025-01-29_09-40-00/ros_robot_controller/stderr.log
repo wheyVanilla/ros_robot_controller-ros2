@@ -1,0 +1,6 @@
+/home/yc/Documents/ROS2/ros_robot_controller-ros2/install/ros_robot_controller/lib/python3.12/site-packages/ros_robot_controller/ros_robot_controller_node.py:54: SyntaxWarning: invalid escape sequence '\s'
+  self.create_subscription(String,'manual_control\selection',self.set_manaul_control,10)
+/home/yc/Documents/ROS2/ros_robot_controller-ros2/install/ros_robot_controller/lib/python3.12/site-packages/ros_robot_controller/ros_robot_controller_node.py:55: SyntaxWarning: invalid escape sequence '\s'
+  self.create_subscription(MotorsState,'manual_control\set_motor', self.set_manual_motor_state, 1)
+/home/yc/Documents/ROS2/ros_robot_controller-ros2/install/ros_robot_controller/lib/python3.12/site-packages/ros_robot_controller/ros_robot_controller_node.py:56: SyntaxWarning: invalid escape sequence '\p'
+  self.create_subscription(SetPWMServoState,'manual_control\pwn_servo_set_state', self.set_manual_pwn_servo_state, 1)
