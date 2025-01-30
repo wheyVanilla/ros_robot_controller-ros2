@@ -1,4 +1,0 @@
-/home/yc/Documents/ROS2/ros_robot_controller-ros2/install/ros_control_station/lib/python3.12/site-packages/ros_control_station/xbox_controller_node.py:39: SyntaxWarning: invalid escape sequence '\s'
-  'manual_control\set_motor',
-/home/yc/Documents/ROS2/ros_robot_controller-ros2/install/ros_control_station/lib/python3.12/site-packages/ros_control_station/xbox_controller_node.py:45: SyntaxWarning: invalid escape sequence '\p'
-  'manual_control\pwn_servo_set_state',
