@@ -280,8 +280,7 @@ class RosRobotController(Node):
             self.set_pwm_servo_state(msg)
 def main():
     node = RosRobotController('ros_robot_controller')
-    rclpy.spin(node)
-    self.line.release()
+    node.line.release()
     node.destroy_node()
     rclpy.shutdown()
                            
