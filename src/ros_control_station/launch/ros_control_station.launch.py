@@ -1,8 +1,10 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.actions import SetEnvironmentVariable
 
 def generate_launch_description():
     return LaunchDescription([
+        SetEnvironmentVariable('ROS_LOG_DIR', '/home/yc/Documents/ROS2/ros_robot_controller-ros2/log_custom'),
         # Joy node
         Node(
             package='joy',
@@ -21,6 +23,7 @@ def generate_launch_description():
             executable='xbox_controller',
             name='xbox_controller_node',
             output='log'
+            
         ),
 
         # Vehicle selection node
@@ -29,5 +32,6 @@ def generate_launch_description():
             executable='vehicle_control_station',
             name='vehicle_control_station',
             output='log'
+            
         )
     ])

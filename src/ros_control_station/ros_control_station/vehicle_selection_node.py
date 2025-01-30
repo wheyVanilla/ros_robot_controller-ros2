@@ -70,10 +70,10 @@ class VehicleControlStation(Node):
     def joy_callback(self, msg):
         current_time = time.time()
         if (current_time - self.last_input_time) > self.input_delay:
-            if msg.axes[3]> 0.7:
+            if msg.axes[4]> 0.7:
                 self.nav_button(-1)
                 self.last_input_time = current_time
-            elif msg.axes[3] < -0.7:
+            elif msg.axes[4] < -0.7:
                 self.nav_button(1)
                 self.last_input_time = current_time
 

@@ -330,7 +330,6 @@ class Board:
         duration = int(duration * 1000)
         data = [0x03, duration & 0xFF, 0xFF & (duration >> 8)]
         data.extend(struct.pack("<BH", int(positions[0]), int(positions[1])))
-        print(f"data {data}")
         self.buf_write(PacketFunction.PACKET_FUNC_PWM_SERVO, data)
     
     def pwm_servo_set_offset(self, servo_id, offset):
@@ -485,7 +484,7 @@ class Board:
                             if func in self.parsers:
                                 self.parsers[func](data)
                         else:
-                            print("校验失败")
+                            print("Checksum error!")
                         self.state = PacketControllerState.PACKET_CONTROLLER_STATE_STARTBYTE1
                         continue
         self.port.close()

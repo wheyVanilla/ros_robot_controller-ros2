@@ -47,21 +47,28 @@ class RosRobotController(Node):
         self.sbus_pub = self.create_publisher(Sbus, '~/sbus', 1)
         self.button_pub = self.create_publisher(ButtonState, '~/button', 1)
         self.battery_pub = self.create_publisher(UInt16, '~/battery', 1)
-        self.create_subscription(LedState, '~/set_led', self.set_led_state, 1)
-        self.create_subscription(BuzzerState, '~/set_buzzer', self.set_buzzer_state, 1)
-        self.create_subscription(MotorsState, '~/set_motor', self.set_motor_state, 1)
-        self.create_subscription(SetBusServoState, '~/bus_servo/set_state', self.set_bus_servo_state, 1)
+        self.create_subscription(LedState, 'robot_control/set_led', self.set_led_state, 1)
+        self.create_subscription(BuzzerState, 'robot_control/set_buzzer', self.set_buzzer_state, 1)
+        self.create_subscription(MotorsState, 'robot_control/set_motor', self.set_motor_state, 1)
+        self.create_subscription(SetBusServoState, 'robot_control/bus_servo/set_state', self.set_bus_servo_state, 1)
         self.create_subscription(String,'manual_control/selection',self.set_manaul_control,10)
         self.create_subscription(MotorsState,'manual_control/set_motor', self.set_manual_motor_state, 1)
         self.create_subscription(SetPWMServoState,'manual_control/pwn_servo_set_state', self.set_manual_pwn_servo_state, 1)
-        self.create_service(GetBusServoState, '~/bus_servo/get_state', self.get_bus_servo_state)
-        self.create_subscription(SetPWMServoState, '~/pwm_servo/set_state', self.set_pwm_servo_state, 1)
-        self.create_service(GetPWMServoState, '~/pwm_servo/get_state', self.get_pwm_servo_state)
+        self.create_service(GetBusServoState, 'robot_control/bus_servo/get_state', self.get_bus_servo_state)
+        self.create_subscription(SetPWMServoState, 'robot_control/pwm_servo/set_state', self.set_pwm_servo_state, 1)
+        self.create_service(GetPWMServoState, 'robot_control/pwm_servo/get_state', self.get_pwm_servo_state)
 
         self.clock = self.get_clock()
         self.create_timer(1.0/100.0, self.pub_callback)
         self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
 
+    def get_cpu_serial(self):
+        with open('/proc/cpuinfo', 'r') as f:
+            for line in f:
+                if line[0:6] == 'Serial':
+                    return line.split(":")[1].strip()
+        return "0000000000000000"
+    
     def shutdown(self, signum, frame):
         self.get_logger().info('\033[1;32m%s\033[0m' % 'shutdown')
         rclpy.shutdown()
@@ -87,9 +94,6 @@ class RosRobotController(Node):
 
     def set_pwm_servo_state(self, msg):
         data = []
-
-        print(msg)
-
         for i in msg.state:
             if i.id and i.position:
                     data.extend([i.id, i.position])
@@ -99,13 +103,11 @@ class RosRobotController(Node):
             
     def get_pwm_servo_state(self, msg, response):
         states = []
-        print("======================")
-        print(msg)
         for i in msg.cmd:
             data = PWMServoState()
             if i.get_position:
                 state = self.board.pwm_servo_read_position(i.id)
-                print(f"state {state}")
+    
                 if state is not None:
                     data.position = state
             if i.get_offset:
@@ -261,6 +263,7 @@ class RosRobotController(Node):
 
     def set_manaul_control(self, msg):
         request_id = msg.data
+        print(request_id)
         self.get_logger().info(f"Received control request for ID: {request_id}")
         if request_id == self.vehicle_id:
             self.get_logger().info("ID matches. Lighting up the LED.")
@@ -280,6 +283,9 @@ class RosRobotController(Node):
             self.set_pwm_servo_state(msg)
 def main():
     node = RosRobotController('ros_robot_controller')
+    rclpy.spin(node)
+
+    
     node.line.release()
     node.destroy_node()
     rclpy.shutdown()
