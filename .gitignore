@@ -5,6 +5,7 @@ __pycache__
 .idea
 .catkin_workspace
 .catkin_tools/
+.vscode/
 devel/
 log/
 log_custom/
