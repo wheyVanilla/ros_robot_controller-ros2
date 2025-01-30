@@ -1,9 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "/opt/ros/jazzy/lib/python3.12/site-packages",
-        "${workspaceFolder}/install/ros_robot_controller_msgs/lib/python3.12/site-packages",
-        "${workspaceFolder}/install/ros_control_station/lib/python3.12/site-packages",
-        "${workspaceFolder}/install/ros_robot_controller/lib/python3.12/site-packages"
-    ],
-    "python.defaultInterpreterPath": "/opt/ros/jazzy/bin/python3.12"
-}
