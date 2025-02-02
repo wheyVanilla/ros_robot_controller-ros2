@@ -1,0 +1,19 @@
+frequncy: 30
+two_d_mode: true
+
+map_frame: map
+odom_frame: odom
+base_link_frame: base_link
+world_frame: odom
+
+# imu input
+imu0: /robot_control/imu_raw
+imu0_differential: true
+imu0_remove_gravity: true
+
+# slam odem input
+odom0: /robot_control/odom
+odom0_differential: false
+
+imu0_linear_acceleration_rejection_threshold: 0.8
+imu0_angular_velocity_rejection_threshold: 0.5
