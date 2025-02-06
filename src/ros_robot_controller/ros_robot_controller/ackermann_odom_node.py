@@ -6,7 +6,7 @@ from geometry_msgs.msg import Quaternion, TransformStamped
 from tf2_ros import TransformBroadcaster
 import math
 
-class IMUOdemNode(Node):
+class IMUOdomNode(Node):
     def __init__(self):
         super().__init__('imu_odom_node')
         self.odom_pub = self.create_publisher(Odometry, '/odometry/filtered', 10)
@@ -78,7 +78,7 @@ class IMUOdemNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    imu_odom_node = IMUOdemNode()
+    imu_odom_node = IMUOdomNode()
     rclpy.spin(imu_odom_node)
     rclpy.shutdown()
 
