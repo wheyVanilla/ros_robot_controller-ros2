@@ -9,7 +9,7 @@ import math
 class IMUOdemNode(Node):
     def __init__(self):
         super().__init__('imu_odom_node')
-        self.odom_pub = self.create_publisher(Odometry, '/odom/filtered', 10)
+        self.odom_pub = self.create_publisher(Odometry, '/odometry/filtered', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
 
         self.imu_sub = self.create_subscription(Imu, '/robot_control/imu_raw', self.imu_callback, 10)
