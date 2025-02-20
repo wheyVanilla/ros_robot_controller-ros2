@@ -16,7 +16,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='ubuntu',
-    maintainer_email='1270161395@qq.com',
+    maintainer_email='yuching.lin@outlook.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
@@ -24,6 +24,8 @@ setup(
         'console_scripts': [
             'ros_robot_controller = ros_robot_controller.ros_robot_controller_node:main',
             'motor_publisher = ros_robot_controller.motor_publisher:main',
+            'imu_odom_node = ros_robot_controller.ackermann_odom_node:main',
+            'tf_publisher = ros_robot_controller.temp_tf_publisher:main',
         ],
     },
 )

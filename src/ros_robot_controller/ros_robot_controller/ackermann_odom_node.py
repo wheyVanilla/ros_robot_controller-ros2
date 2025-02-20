@@ -9,12 +9,12 @@ import math
 class IMUOdomNode(Node):
     def __init__(self):
         super().__init__('imu_odom_node')
-        self.odom_pub = self.create_publisher(Odometry, '/odometry/filtered', 10)
+        self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
 
         self.imu_sub = self.create_subscription(Imu, '/robot_control/imu_raw', self.imu_callback, 10)
         
-        self.wheelbase = 180 # mm
+        self.wheelbase = 0.18 # m
         
         self.x = 0.0    # x position
         self.y = 0.0    # y position
@@ -37,7 +37,7 @@ class IMUOdomNode(Node):
         self.vy += self.ay * dt   # m/s
 
         self.x += self.vx * dt  # m
-        self.y += self.vx * dt  # m
+        self.y += self.vy * dt  # m
 
         # Publish odometry message
         odom = Odometry()
@@ -67,7 +67,7 @@ class IMUOdomNode(Node):
         t.transform.rotation.z = math.sin(self.yaw/2)
         t.transform.rotation.w = math.cos(self.yaw/2)
 
-        self.tf_broadcaster.sendTransform(t)
+        # self.tf_broadcaster.sendTransform(t)
 
         self.last_time = current_time
 

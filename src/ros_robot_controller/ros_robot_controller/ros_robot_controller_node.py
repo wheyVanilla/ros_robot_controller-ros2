@@ -4,10 +4,16 @@
 # @Date: 2023/08/28
 # stm32 ros2 package
 import math
+import os
+
+import yaml
 import rclpy
 import signal
-import gpiod
-
+try:
+    import gpiod as gpio # Works only on Raspberry Pi
+except ImportError:
+    import unittest.mock as mock
+    gpio = mock.Mock()
 from rclpy.node import Node
 from std_msgs.msg import UInt16
 from std_msgs.msg import String
@@ -22,20 +28,29 @@ class RosRobotController(Node):
         rclpy.init()
         super().__init__(name)
         
+        # Declare config path
+        self.declare_parameter('config_path','src/ros_robot_controller/config/config.yaml')
+        config_path = self.get_parameter('config_path').value
+
+        # Load config
+        self.config = self.load_config(config_path)
+
+
         self.manaul_control_flag = False
         self.board = Board()
         self.board.enable_reception()
         signal.signal(signal.SIGINT, self.shutdown)
 
         # Read CPU serial number as vehicle ID
-        self.vehicle_id = self.get_cpu_serial()
-        self.get_logger().info(f"Vehicle ID: {self.vehicle_id}")
+        if self.config.get('run_on_raspi'):
+            self.vehicle_id = self.get_cpu_serial()
+            self.get_logger().info(f"Vehicle ID: {self.vehicle_id}")
 
         # GPIO setup
-        self.led_pin = 17
-        self.chip = gpiod.Chip('gpiochip4')
-        self.line = self.chip.get_line(self.led_pin)
-        self.line.request(consumer='ros_robot_controller', type=gpiod.LINE_REQ_DIR_OUT)
+            self.led_pin = 17
+            self.chip = gpio.Chip('gpiochip4')
+            self.line = self.chip.get_line(self.led_pin)
+            self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
 
 
         # initialize
@@ -61,6 +76,17 @@ class RosRobotController(Node):
         self.clock = self.get_clock()
         self.create_timer(1.0/100.0, self.pub_callback)
         self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
+
+    def load_config(self,path):
+        try:
+            abs_path = os.path.abspath(path)
+            with open(abs_path,'r') as file:
+                config = yaml.safe_load(file)
+            return config['ros_robot_controller_node']
+
+        except Exception as e:
+            self.get_logger().error(f"Failed to load config: {e}")
+            return []
 
     def get_cpu_serial(self):
         with open('/proc/cpuinfo', 'r') as f:
@@ -243,7 +269,7 @@ class RosRobotController(Node):
             msg.header.frame_id = self.IMU_FRAME
             msg.header.stamp = self.clock.now().to_msg()
 
-            msg.orientation.w = 0.0
+            msg.orientation.w = 1.0
             msg.orientation.x = 0.0
             msg.orientation.y = 0.0
             msg.orientation.z = 0.0
@@ -256,7 +282,7 @@ class RosRobotController(Node):
             msg.angular_velocity.y = math.radians(gy)
             msg.angular_velocity.z = math.radians(gz)
 
-            msg.orientation_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+            msg.orientation_covariance = [-1, 0.0, 0.0, 0.0, -1, 0.0, 0.0, 0.0, -1]
             msg.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
             msg.linear_acceleration_covariance = [0.0004, 0.0, 0.0, 0.0, 0.0004, 0.0, 0.0, 0.0, 0.004]
             pub.publish(msg)
@@ -268,11 +294,13 @@ class RosRobotController(Node):
         if request_id == self.vehicle_id:
             self.get_logger().info("ID matches. Lighting up the LED.")
             self.manaul_control_flag = True
-            self.line.set_value(1)
+            if self.config.get('run_on_raspi'):
+                self.line.set_value(1)
         else:
             self.get_logger().info("ID does not match. Turning off the LED.")
             self.manaul_control_flag = False
-            self.line.set_value(0)
+            if self.config.get('run_on_raspi'):
+                self.line.set_value(0)
 
     def set_manual_motor_state(self, msg):
         if self.manaul_control_flag:
