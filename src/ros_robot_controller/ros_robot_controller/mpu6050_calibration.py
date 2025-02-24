@@ -5,10 +5,12 @@ from rclpy.node import Node
 from sensor_msgs.msg import Imu
 import yaml
 import os
+from ament_index_python.packages import get_package_share_directory
 
 class MPU6050Calibration(Node):
     def __init__(self):
         super().__init__('mpu6050_calibration')
+
         self.subscription = self.create_subscription(Imu, 'robot_control/imu_raw', self.imu_callback, 1)
         
         self.samples = 500
@@ -20,7 +22,17 @@ class MPU6050Calibration(Node):
         self.gyro_y_sum = 0
         self.gyro_z_sum = 0
 
-        self.config_file = os.path.join(os.path.dirname(__file__), 'config', 'config.yaml')
+        self.declare_parameter('config_path','src/ros_robot_controller/config/config.yaml')
+        config_path = self.get_parameter('config_path').value
+
+
+
+        # try:
+        #     package_share_dir = get_package_share_directory('ros_robot_controller')
+        #     self.config_path = os.path.join(package_share_dir, 'config', 'config.yaml')
+        # except Exception as e:
+        #     self.get_logger().error(f"Failed to find package share directory: {e}")
+        #     self.config_path = '/tmp/config.yaml'  # Fallback (optional)
 
         self.save_in_degrees = False
 
@@ -72,13 +84,13 @@ class MPU6050Calibration(Node):
                 gyro_unit
             )
 
-            self.get_logger().info(f'Calibration data saved to {self.config_file}')
+            self.get_logger().info(f'Calibration data saved to {self.config_path}')
             
             rclpy.shutdown()
     def save_to_config(self, accel_x_bias, accel_y_bias, accel_z_bias, gyro_x_bias, gyro_y_bias, gyro_z_bias, gyro_unit):
         
         try:
-            with open(self.config_file, 'r') as file:
+            with open(self.config_path, 'r') as file:
                 config = yaml.safe_load(file) or {}
         except FileNotFoundError:
             config = {}

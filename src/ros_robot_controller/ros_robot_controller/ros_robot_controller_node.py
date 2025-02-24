@@ -29,6 +29,9 @@ class RosRobotController(Node):
         super().__init__(name)
         
         # Declare config path
+        self.config_file = os.path.join(os.path.dirname(__file__), 'config', 'config.yaml')
+        print(self.config_file)
+
         self.declare_parameter('config_path','src/ros_robot_controller/config/config.yaml')
         config_path = self.get_parameter('config_path').value
 
@@ -83,7 +86,7 @@ class RosRobotController(Node):
             abs_path = os.path.abspath(path)
             with open(abs_path,'r') as file:
                 config = yaml.safe_load(file)
-            return config['ros_robot_controller']
+            return config['ros_robot_controller'] 
 
         except Exception as e:
             self.get_logger().error(f"Failed to load config: {e}")
