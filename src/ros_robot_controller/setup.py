@@ -26,6 +26,7 @@ setup(
             'motor_publisher = ros_robot_controller.motor_publisher:main',
             'imu_odom_node = ros_robot_controller.ackermann_odom_node:main',
             'tf_publisher = ros_robot_controller.temp_tf_publisher:main',
+            'mpu6050_calibration = ros_robot_controller.mpu6050_calibration:main',
         ],
     },
 )
