@@ -20,7 +20,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Imu, Joy
 from ros_robot_controller.ros_robot_controller_sdk import Board
 from ros_robot_controller_msgs.srv import GetBusServoState, GetPWMServoState
-from ros_robot_controller_msgs.msg import ButtonState, BuzzerState, LedState, MotorsState, BusServoState, PWMServoState, SetBusServoState, SetPWMServoState, Sbus
+from ros_robot_controller_msgs.msg import ButtonState, BuzzerState, LedState, MotorState, MotorsState, BusServoState, PWMServoState, SetBusServoState, SetPWMServoState, Sbus
 
 class RosRobotController(Node):
     gravity = 9.80665
@@ -42,15 +42,14 @@ class RosRobotController(Node):
         signal.signal(signal.SIGINT, self.shutdown)
 
         # Read CPU serial number as vehicle ID
-        if self.config.get('run_on_raspi'):
-            self.vehicle_id = self.get_cpu_serial()
-            self.get_logger().info(f"Vehicle ID: {self.vehicle_id}")
+        self.vehicle_id = self.get_cpu_serial()
+        self.get_logger().info(f"Vehicle ID: {self.vehicle_id}")
 
         # GPIO setup
-            self.led_pin = 17
-            self.chip = gpio.Chip('gpiochip4')
-            self.line = self.chip.get_line(self.led_pin)
-            self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
+        self.led_pin = 17
+        self.chip = gpio.Chip('gpiochip4')
+        self.line = self.chip.get_line(self.led_pin)
+        self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
 
 
         # initialize
@@ -62,6 +61,8 @@ class RosRobotController(Node):
         self.sbus_pub = self.create_publisher(Sbus, '~/sbus', 1)
         self.button_pub = self.create_publisher(ButtonState, '~/button', 1)
         self.battery_pub = self.create_publisher(UInt16, '~/battery', 1)
+        self.motors_pub = self.create_publisher(MotorsState, 'robot_control/motors', 1)
+        self.pwm_servo_pub = self.create_publisher(PWMServoState, 'robot_control/servo', 1)
         self.create_subscription(LedState, 'robot_control/set_led', self.set_led_state, 1)
         self.create_subscription(BuzzerState, 'robot_control/set_buzzer', self.set_buzzer_state, 1)
         self.create_subscription(MotorsState, 'robot_control/set_motor', self.set_motor_state, 1)
@@ -74,7 +75,7 @@ class RosRobotController(Node):
         self.create_service(GetPWMServoState, 'robot_control/pwm_servo/get_state', self.get_pwm_servo_state)
 
         self.clock = self.get_clock()
-        self.create_timer(1.0/100.0, self.pub_callback)
+        self.create_timer(1.0/self.config['frequency'], self.pub_callback)
         self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
 
     def load_config(self,path):
@@ -105,6 +106,8 @@ class RosRobotController(Node):
         self.pub_imu_data(self.imu_pub)
         self.pub_sbus_data(self.sbus_pub)
         self.pub_battery_data(self.battery_pub)
+        # self.pub_motor_data(self.motors_pub)
+        self.pub_pwm_servo_data(self.pwm_servo_pub)
 
     def set_led_state(self, msg):
         self.board.set_led(msg.on_time, msg.off_time, msg.repeat, msg.id)
@@ -114,16 +117,33 @@ class RosRobotController(Node):
 
     def set_motor_state(self, msg):
         data = []
+        print(msg.data)
         for i in msg.data:
             data.extend([[i.id, i.rps]])
-        self.board.set_motor_speed(data)
+        data = self.board.set_motor_speed(data)
+        if data is not None:
+            num, m1, m1rps, m2, m2rps, m3, m3rps, m4, m4rps = data
+            msg = MotorsState()
+            msg.data = [
+                MotorState(id=m1, rps=m1rps),
+                MotorState(id=m2, rps=m2rps),
+                MotorState(id=m3, rps=m3rps),
+                MotorState(id=m4, rps=m4rps)
+            ]
+            self.motors_pub.publish(msg)
+
 
     def set_pwm_servo_state(self, msg):
         data = []
         for i in msg.state:
             if i.id and i.position:
                     data.extend([i.id, i.position])
-                    self.board.pwm_servo_set_position(msg.duration, data)
+                    id, cmd, pulse = self.board.pwm_servo_set_position(msg.duration, data)
+                    print(data)
+                    m = PWMServoState()
+                    m.id = id
+                    m.position = pulse
+                    self.pwm_servo_pub.publish(m)
             if i.id and i.offset:
                     self.board.pwm_servo_set_offset(i.id, i.offset)
             
@@ -286,21 +306,36 @@ class RosRobotController(Node):
             msg.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
             msg.linear_acceleration_covariance = [0.0004, 0.0, 0.0, 0.0, 0.0004, 0.0, 0.0, 0.0, 0.004]
             pub.publish(msg)
-
+    def pub_motor_data(self, pub):
+        data = self.board.get_motor()
+        if data is not None:
+            num, m1, m1rps, m2, m2rps, m3, m3rps, m4, m4rps = data
+            msg = MotorsState()
+            msg.data = [
+                MotorState(id=m1, rps=m1rps),
+                MotorState(id=m2, rps=m2rps),
+                MotorState(id=m3, rps=m3rps),
+                MotorState(id=m4, rps=m4rps)
+            ]
+            self.pub_motor_data.publish(msg)
+    def pub_pwm_servo_data(self, pub):
+        data = self.board.get_pwm_servo()
+        if data is not None:
+            msg = PWMServoState()
+            msg.id = data[0]
+            msg.position = data[2]
+            pub.publish(msg)
     def set_manaul_control(self, msg):
         request_id = msg.data
-        print(request_id)
         self.get_logger().info(f"Received control request for ID: {request_id}")
         if request_id == self.vehicle_id:
             self.get_logger().info("ID matches. Lighting up the LED.")
             self.manaul_control_flag = True
-            if self.config.get('run_on_raspi'):
-                self.line.set_value(1)
+            self.line.set_value(1)
         else:
             self.get_logger().info("ID does not match. Turning off the LED.")
             self.manaul_control_flag = False
-            if self.config.get('run_on_raspi'):
-                self.line.set_value(0)
+            self.line.set_value(0)
 
     def set_manual_motor_state(self, msg):
         if self.manaul_control_flag:

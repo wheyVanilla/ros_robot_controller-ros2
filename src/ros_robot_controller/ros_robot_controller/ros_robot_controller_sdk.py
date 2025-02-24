@@ -106,12 +106,14 @@ class Board:
         self.state = PacketControllerState.PACKET_CONTROLLER_STATE_STARTBYTE1
         self.servo_read_lock = threading.Lock()
         self.pwm_servo_read_lock = threading.Lock()
+        self.motor_read_lock = threading.Lock()
         
         self.sys_queue = queue.Queue(maxsize=1)
         self.bus_servo_queue = queue.Queue(maxsize=1)
         self.pwm_servo_queue = queue.Queue(maxsize=1)
         self.key_queue = queue.Queue(maxsize=1)
         self.imu_queue = queue.Queue(maxsize=1)
+        self.motor_queue = queue.Queue(maxsize=1)
         self.gamepad_queue = queue.Queue(maxsize=1)
         self.sbus_queue = queue.Queue(maxsize=1)
 
@@ -122,8 +124,15 @@ class Board:
             PacketFunction.PACKET_FUNC_GAMEPAD: self.packet_report_gamepad,
             PacketFunction.PACKET_FUNC_BUS_SERVO: self.packet_report_serial_servo,
             PacketFunction.PACKET_FUNC_SBUS: self.packet_report_sbus,
-            PacketFunction.PACKET_FUNC_PWM_SERVO: self.packet_report_pwm_servo
+            PacketFunction.PACKET_FUNC_PWM_SERVO: self.packet_report_pwm_servo,
+            PacketFunction.PACKET_FUNC_MOTOR: self.packet_report_motor
         }
+
+    def packet_report_motor(self, data):
+        try:
+            self.motor_queue.put_nowait(data)
+        except queue.Full:
+            pass
 
     def packet_report_sys(self, data):
         try:
@@ -200,6 +209,7 @@ class Board:
     def get_imu(self):
         if self.enable_recv:
             try:
+                # print(self.imu_queue.get(block=False))
                 # ax, ay, az, gx, gy, gz
                 return struct.unpack('<6f', self.imu_queue.get(block=False))
             except queue.Empty:
@@ -207,7 +217,29 @@ class Board:
         else:
             print('enable reception first!')
             return None
+        
+    def get_motor(self):
+        if self.enable_recv:
+            try:
+                return struct.unpack('<BBfBfBfBf', self.motor_queue.get(block=False))
+            except queue.Empty:
+                return None
+        else:
+            print('enable reception first!')
+            return None
+    def get_pwm_servo(self):
 
+        if self.enable_recv:
+            try:
+                # data = self.pwm_servo_queue.get(block=False)
+                # print(data)
+                # print(struct.unpack('<BBHHHH', self.pwm_servo_queue.get(block=False)))
+                return struct.unpack('<BBHHHH', self.pwm_servo_queue.get(block=False))
+            except queue.Empty:
+                return None
+        else:
+            print('enable reception first!')
+            return None
     def get_gamepad(self):
         if self.enable_recv:
             try:
@@ -323,14 +355,21 @@ class Board:
     def set_motor_speed(self, speeds):
         data = [0x01, len(speeds)]
         for i in speeds:
-            data.extend(struct.pack("<Bf", int(i[0] - 1), float(i[1])))
+            data.extend(struct.pack("<Bf", int(i[0]-1), float(i[1])))
+        # with self.motor_read_lock:
         self.buf_write(PacketFunction.PACKET_FUNC_MOTOR, data)
+        print(data)
+        # data1 = self.motor_queue.get(block=True)
+        
+        return struct.unpack('<BBfBfBfBf', self.motor_queue.get(block=True))
 
     def pwm_servo_set_position(self, duration, positions):
         duration = int(duration * 1000)
         data = [0x03, duration & 0xFF, 0xFF & (duration >> 8)]
         data.extend(struct.pack("<BH", int(positions[0]), int(positions[1])))
-        self.buf_write(PacketFunction.PACKET_FUNC_PWM_SERVO, data)
+        with self.servo_read_lock:
+            self.buf_write(PacketFunction.PACKET_FUNC_PWM_SERVO, data)
+            return struct.unpack('<BBH', self.pwm_servo_queue.get(block=True))
     
     def pwm_servo_set_offset(self, servo_id, offset):
         data = struct.pack("<BBb", 0x07, servo_id, int(offset))
@@ -562,9 +601,20 @@ if __name__ == "__main__":
             # res = board.get_sbus()
             # if res is not None:
                 # print(res)
-            res = board.get_battery()
+            
+            # res = board.get_battery()
+            # res = board.get_pwm_servo()
+            print("test")
+            res = board.set_motor_speed([[1, 0.0], [2, 0.0]])
+            # res = board.pwm_servo_set_position(0.5, [1,1500])
+            # print(res)
             if res is not None:
+            
                 print(res)
-            time.sleep(0.001)
+            
+
+
+            time.sleep(1)
+
         except KeyboardInterrupt:
             break
