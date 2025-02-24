@@ -16,7 +16,7 @@ class VehicleControlStation(Node):
         self.input_delay = 0.3
 
         # Declare config path
-        self.declare_parameter('config_path','config/config.yaml')
+        self.declare_parameter('config_path','src/ros_control_station/config/config.yaml')
         config_path = self.get_parameter('config_path').value
 
         # Load config

@@ -1,2 +1,2 @@
 ros_robot_controller_node:
-  run_on_raspi: true
+  frequency: 10
