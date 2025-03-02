@@ -86,7 +86,7 @@ class RosRobotController(Node):
             abs_path = os.path.abspath(path)
             with open(abs_path,'r') as file:
                 config = yaml.safe_load(file)
-            return config['ros_robot_controller'] 
+            return config['ros_robot_controller_node'] 
 
         except Exception as e:
             self.get_logger().error(f"Failed to load config: {e}")
