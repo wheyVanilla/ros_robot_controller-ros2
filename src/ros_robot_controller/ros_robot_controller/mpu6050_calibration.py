@@ -171,9 +171,6 @@ class ImuCalibrationNode(Node):
         except FileNotFoundError:
             config = {}
 
-        if 'ros_robot_controller_node' not in config:
-            config['ros_robot_controller_node'] = {'frequency': 10}
-
         config['ros_robot_controller_node']['imu_calibration'] = {
             'accelerometer': {
                 'bias': {
