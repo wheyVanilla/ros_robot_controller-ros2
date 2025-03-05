@@ -29,14 +29,35 @@ class RosRobotController(Node):
         super().__init__(name)
         
         # Declare config path
-        self.config_file = os.path.join(os.path.dirname(__file__), 'config', 'config.yaml')
-        print(self.config_file)
+        # self.config_file = os.path.join(os.path.dirname(__file__), 'config', 'config.yaml')
+        # print(self.config_file)
 
         self.declare_parameter('config_path','src/ros_robot_controller/config/config.yaml')
         config_path = self.get_parameter('config_path').value
 
         # Load config
         self.config = self.load_config(config_path)
+
+        self.imu_accel_bias = {
+            'x': self.config['imu_calibration']['accelerometer']['bias']['x'], 
+            'y': self.config['imu_calibration']['accelerometer']['bias']['y'],
+            'z': self.config['imu_calibration']['accelerometer']['bias']['z']
+        }
+        self.imu_gyro_bias = {
+            'x': self.config['imu_calibration']['gyroscope']['bias']['x'],
+            'y': self.config['imu_calibration']['gyroscope']['bias']['y'],
+            'z': self.config['imu_calibration']['gyroscope']['bias']['z']
+        }
+        self.gyro_unit = self.config['imu_calibration']['gyroscope']['unit']
+
+        if self.gyro_unit == 'degree/s':
+            self.gyro_bias_rad = {
+                'x': math.radians(self.imu_gyro_bias['x']),
+                'y': math.radians(self.imu_gyro_bias['y']),
+                'z': math.radians(self.imu_gyro_bias['z'])
+            }
+        else:
+            self.gyro_bias_rad = self.imu_gyro_bias
 
 
         self.manaul_control_flag = False
@@ -58,8 +79,9 @@ class RosRobotController(Node):
         # initialize
         self.declare_parameter('imu_frame', 'imu_link')
         self.IMU_FRAME = self.get_parameter('imu_frame').value
-
+        
         self.imu_pub = self.create_publisher(Imu, 'robot_control/imu_raw', 1)
+        self.imu_corrected_pub = self.create_publisher(Imu, 'robot_control/imu', 1)
         self.joy_pub = self.create_publisher(Joy, '~/joy', 1)
         self.sbus_pub = self.create_publisher(Sbus, '~/sbus', 1)
         self.button_pub = self.create_publisher(ButtonState, '~/button', 1)
@@ -106,11 +128,11 @@ class RosRobotController(Node):
     def pub_callback(self):
         self.pub_button_data(self.button_pub)
         self.pub_joy_data(self.joy_pub)
-        self.pub_imu_data(self.imu_pub)
+        self.pub_imu_data(self.imu_pub, self.imu_corrected_pub)
         self.pub_sbus_data(self.sbus_pub)
         self.pub_battery_data(self.battery_pub)
         # self.pub_motor_data(self.motors_pub)
-        self.pub_pwm_servo_data(self.pwm_servo_pub)
+        # self.pub_pwm_servo_data(self.pwm_servo_pub)
 
     def set_led_state(self, msg):
         self.board.set_led(msg.on_time, msg.off_time, msg.repeat, msg.id)
@@ -284,31 +306,55 @@ class RosRobotController(Node):
             msg.header.stamp = self.clock.now().to_msg()
             pub.publish(msg)
 
-    def pub_imu_data(self, pub):
+    def pub_imu_data(self, pub, pub_corrected):
         data = self.board.get_imu()
         if data is not None:
             ax, ay, az, gx, gy, gz = data
-            msg = Imu()
-            msg.header.frame_id = self.IMU_FRAME
-            msg.header.stamp = self.clock.now().to_msg()
 
-            msg.orientation.w = 1.0
-            msg.orientation.x = 0.0
-            msg.orientation.y = 0.0
-            msg.orientation.z = 0.0
+            raw_msg = self._create_imu_msg()
+            corrected_msg = self._create_imu_msg()
 
-            msg.linear_acceleration.x = ax * self.gravity
-            msg.linear_acceleration.y = ay * self.gravity
-            msg.linear_acceleration.z = az * self.gravity
+            # Fill raw IMU data
+            self._set_raw_imu_data(raw_msg, ax, ay, az, gx, gy, gz)
 
-            msg.angular_velocity.x = math.radians(gx)
-            msg.angular_velocity.y = math.radians(gy)
-            msg.angular_velocity.z = math.radians(gz)
+            #  Fill corrected IMU data with bias subtraction
+            self._set_corrected_imu_data(corrected_msg, ax, ay, az, gx, gy, gz)
 
-            msg.orientation_covariance = [-1, 0.0, 0.0, 0.0, -1, 0.0, 0.0, 0.0, -1]
-            msg.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
-            msg.linear_acceleration_covariance = [0.0004, 0.0, 0.0, 0.0, 0.0004, 0.0, 0.0, 0.0, 0.004]
-            pub.publish(msg)
+            pub.publish(raw_msg)
+            pub_corrected.publish(corrected_msg)
+
+    def _create_imu_msg(self):
+        """Create a default IMU message with common settings."""
+        msg = Imu()
+        msg.header.frame_id = self.IMU_FRAME
+        msg.header.stamp = self.clock.now().to_msg()
+        msg.orientation.w = 1.0  # No orientation data from MPU6050
+        msg.orientation.x = 0.0
+        msg.orientation.y = 0.0
+        msg.orientation.z = 0.0
+        msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0]  # Orientation not provided
+        msg.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+        msg.linear_acceleration_covariance = [0.0004, 0.0, 0.0, 0.0, 0.0004, 0.0, 0.0, 0.0, 0.004]
+        return msg
+    
+    def _set_raw_imu_data(self, msg, ax, ay, az, gx, gy, gz):
+        """Set raw IMU data in the message (accel in m/s², gyro in rad/s)."""
+        msg.linear_acceleration.x = ax * self.gravity
+        msg.linear_acceleration.y = ay * self.gravity
+        msg.linear_acceleration.z = az * self.gravity
+        msg.angular_velocity.x = math.radians(gx)
+        msg.angular_velocity.y = math.radians(gy)
+        msg.angular_velocity.z = math.radians(gz)
+
+    def _set_corrected_imu_data(self, msg, ax, ay, az, gx, gy, gz):
+        """Set bias-corrected IMU data in the message (accel in m/s², gyro in rad/s)."""
+        msg.linear_acceleration.x = (ax * self.gravity) - self.imu_accel_bias['x']
+        msg.linear_acceleration.y = (ay * self.gravity) - self.imu_accel_bias['y']
+        msg.linear_acceleration.z = (az * self.gravity) - self.imu_accel_bias['z']
+        msg.angular_velocity.x = math.radians(gx) - self.gyro_bias_rad['x']
+        msg.angular_velocity.y = math.radians(gy) - self.gyro_bias_rad['y']
+        msg.angular_velocity.z = math.radians(gz) - self.gyro_bias_rad['z']
+    
     def pub_motor_data(self, pub):
         data = self.board.get_motor()
         if data is not None:

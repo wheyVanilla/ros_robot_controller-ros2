@@ -1,22 +1,22 @@
 ros_robot_controller_node:
-  frequency: 10
+  frequency: 1
   imu_calibration:
-  accelerometer:
-    bias:
-      x: 0.3273
-      y: -0.3155
-      z: 0.1695
-    scale:
-      x: 1.0
-      y: 1.0
-      z: 1.0
-  gyroscope:
-    bias:
-      x: -1.3350
-      y: -15.6098
-      z: 1.3329
-    scale:
-      x: 1.0
-      y: 1.0
-      z: 1.0
-    unit: degrees/s
+    accelerometer:
+      bias:
+        x: 0.3273
+        y: -0.3155
+        z: 0.1695
+      scale:
+        x: 1.0
+        y: 1.0
+        z: 1.0
+    gyroscope:
+      bias:
+        x: -1.3350
+        y: -15.6098
+        z: 1.3329
+      scale:
+        x: 1.0
+        y: 1.0
+        z: 1.0
+      unit: degree/s
