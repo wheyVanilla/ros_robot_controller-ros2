@@ -20,3 +20,10 @@ ros_robot_controller_node:
         y: 1.0
         z: 1.0
       unit: degree/s
+
+vehicle_data:
+  wheel_radius: 0.05        # meters
+  wheelbase: 0.18           # meters
+  servo_pwm_center: 1500    # microseconds
+  servo_pwm_range: 1000     # ±microseconds
+  steering_angle_max: 0.8   # 1 for +-90 degrees

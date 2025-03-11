@@ -16,7 +16,9 @@ class XboxControlStation(Node):
             depth=1,
             reliability=ReliabilityPolicy.BEST_EFFORT
         )
-
+        
+        
+        #TODO: make those parameters as configurable
         # Control parameters
         self.max_speed = 2.0     # Maximum RPS
         
