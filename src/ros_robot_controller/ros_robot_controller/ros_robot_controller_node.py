@@ -69,12 +69,25 @@ class RosRobotController(Node):
         self.vehicle_id = self.get_cpu_serial()
         self.get_logger().info(f"Vehicle ID: {self.vehicle_id}")
 
-        # GPIO setup
+        # GPIO setup, check if the pin is available
         self.led_pin = 17
-        self.chip = gpio.Chip('gpiochip4')
-        self.line = self.chip.get_line(self.led_pin)
-        self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
-
+        self.chip = None
+        self.line = None
+        try:
+            self.chip = gpio.Chip('gpiochip4')
+            self.line = self.chip.get_line(self.led_pin)
+            try:
+                self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
+            except OSError as e:
+                if e.errno == 16:
+                    self.get_logger().error("Line is busy")
+                    self.line.release()
+                    self.line.request(consumer='ros_robot_controller', type=gpio.LINE_REQ_DIR_OUT)
+                    self.get_logger().error("Opened line")
+        except Exception as e:
+            self.get_logger().error("Failed to open GPIO chip")
+            raise  
+              
 
         # initialize
         self.declare_parameter('imu_frame', 'imu_link')
@@ -100,7 +113,8 @@ class RosRobotController(Node):
         self.create_service(GetPWMServoState, 'robot_control/pwm_servo/get_state', self.get_pwm_servo_state)
 
         self.clock = self.get_clock()
-        self.create_timer(1.0/self.config['frequency'], self.pub_callback)
+        self.create_timer(1.0/self.config['frequency']['all'], self.pub_callback)
+        self.create_timer(1.0/self.config['frequency']['imu'], self.pub_imu_data)
         self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
 
     def load_config(self,path):
@@ -128,7 +142,7 @@ class RosRobotController(Node):
     def pub_callback(self):
         self.pub_button_data(self.button_pub)
         self.pub_joy_data(self.joy_pub)
-        self.pub_imu_data(self.imu_pub, self.imu_corrected_pub)
+        # self.pub_imu_data(self.imu_pub, self.imu_corrected_pub)
         self.pub_sbus_data(self.sbus_pub)
         self.pub_battery_data(self.battery_pub)
         # self.pub_motor_data(self.motors_pub)
@@ -142,7 +156,7 @@ class RosRobotController(Node):
 
     def set_motor_state(self, msg):
         data = []
-        print(msg.data)
+        # print(msg.data)
         for i in msg.data:
             data.extend([[i.id, i.rps]])
         data = self.board.set_motor_speed(data)
@@ -164,7 +178,7 @@ class RosRobotController(Node):
             if i.id and i.position:
                     data.extend([i.id, i.position])
                     id, cmd, pulse = self.board.pwm_servo_set_position(msg.duration, data)
-                    print(data)
+                    # print(data)
                     m = PWMServoState()
                     m.id = id
                     m.position = pulse
@@ -306,7 +320,7 @@ class RosRobotController(Node):
             msg.header.stamp = self.clock.now().to_msg()
             pub.publish(msg)
 
-    def pub_imu_data(self, pub, pub_corrected):
+    def pub_imu_data(self):
         data = self.board.get_imu()
         if data is not None:
             ax, ay, az, gx, gy, gz = data
@@ -320,8 +334,8 @@ class RosRobotController(Node):
             #  Fill corrected IMU data with bias subtraction
             self._set_corrected_imu_data(corrected_msg, ax, ay, az, gx, gy, gz)
 
-            pub.publish(raw_msg)
-            pub_corrected.publish(corrected_msg)
+            self.imu_pub.publish(raw_msg)
+            self.imu_corrected_pub.publish(corrected_msg)
 
     def _create_imu_msg(self):
         """Create a default IMU message with common settings."""

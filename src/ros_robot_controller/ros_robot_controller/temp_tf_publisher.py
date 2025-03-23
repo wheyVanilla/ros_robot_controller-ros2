@@ -11,8 +11,8 @@ class DynamicTFBroadcaster(Node):
         super().__init__('dynamic_tf_broadcaster')
         self.tf_broadcaster = TransformBroadcaster(self)
         self.timer = self.create_timer(0.1, self.broadcast_tf)  # Publish at 10Hz
-        self.publisher_ = self.create_publisher(Odometry, '/odom', 10)
-        self.timer = self.create_timer(0.1, self.publish_odom)  # Publish at 10 Hz
+        # self.publisher_ = self.create_publisher(Odometry, '/odom', 10)
+        # self.timer = self.create_timer(0.1, self.publish_odom)  # Publish at 10 Hz
         self.x, self.y, self.theta = 0.0, 0.0, 0.0  # Initial position
 
 
@@ -21,11 +21,12 @@ class DynamicTFBroadcaster(Node):
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "base_link"
         t.child_frame_id = "laser"
-        t.transform.translation.x = 0.0  # Modify based on LIDAR position
+        t.transform.translation.x = 0.1 # Example: LIDAR is 10cm in front of base_link
         t.transform.translation.y = 0.0
-        t.transform.translation.z = 0.1  # Example: LIDAR is 10cm above base_link
+        t.transform.translation.z = 0.05  # Example: LIDAR is 5cm above base_link
         t.transform.rotation.w = 1.0  # No rotation
         self.tf_broadcaster.sendTransform(t)
+        
     def publish_odom(self):
         msg = Odometry()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -49,7 +50,7 @@ class DynamicTFBroadcaster(Node):
         msg.twist.twist.angular.z = 0.00  # Small rotation
 
         self.publisher_.publish(msg)
-        # self.get_logger().info(f"Published Odom: x={self.x}, y={self.y}, theta={self.theta}")
+        self.get_logger().info(f"Published Odom: x={self.x}, y={self.y}, theta={self.theta}")
 
 def main():
     rclpy.init()

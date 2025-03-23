@@ -4,10 +4,13 @@ import os
 import math
 from geometry_msgs.msg import Quaternion
 
-def load_config(node, config_key='ros_robot_controller_node', config_path_param='config_path', default_path='src/ros_robot_controller/config/config.yaml'):
+def load_config(node, config_key='ros_robot_controller_node', config_path=None,config_path_param='config_path', default_path='src/ros_robot_controller/config/config.yaml'):
     logger = node.get_logger()
-    node.declare_parameter(config_path_param, default_path)
-    config_path = node.get_parameter(config_path_param).get_parameter_value().string_value
+    
+    if config_path is None:
+        node.declare_parameter(config_path_param, default_path)
+        config_path = node.get_parameter(config_path_param).get_parameter_value().string_value
+        
     try:
         abs_path = os.path.abspath(config_path)
         with open(abs_path, 'r') as file:

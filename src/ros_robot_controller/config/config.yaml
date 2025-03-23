@@ -1,5 +1,9 @@
 ros_robot_controller_node:
-  frequency: 1
+  frequency:
+    all: 10
+    imu: 20
+    encoder: 10
+    servo: 10
   imu_calibration:
     accelerometer:
       bias:

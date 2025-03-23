@@ -358,7 +358,7 @@ class Board:
             data.extend(struct.pack("<Bf", int(i[0]-1), float(i[1])))
         # with self.motor_read_lock:
         self.buf_write(PacketFunction.PACKET_FUNC_MOTOR, data)
-        print(data)
+        # print(data)
         # data1 = self.motor_queue.get(block=True)
         
         return struct.unpack('<BBfBfBfBf', self.motor_queue.get(block=True))
@@ -604,13 +604,9 @@ if __name__ == "__main__":
             
             # res = board.get_battery()
             # res = board.get_pwm_servo()
-            print("test")
             res = board.set_motor_speed([[1, 0.0], [2, 0.0]])
             # res = board.pwm_servo_set_position(0.5, [1,1500])
             # print(res)
-            if res is not None:
-            
-                print(res)
             
 
 

@@ -14,7 +14,8 @@ class OdomCalcNode(Node):
 
         # Declare config path parameter and load config
         self.declare_parameter('config_path', 'src/ros_robot_controller/config/config.yaml')
-        self.config = utils.load_config(self, config_key='odom_calc_node', config_path_param='config_path')
+        config_path = self.get_parameter('config_path').get_parameter_value().string_value
+        self.config = utils.load_config(self, config_key='odom_calc_node', config_path=config_path)
 
         # Vehicle parameters from config
         self.wheel_radius = self.config.get('wheel_radius', 0.05)
