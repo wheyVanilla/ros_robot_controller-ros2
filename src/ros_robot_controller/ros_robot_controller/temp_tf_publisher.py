@@ -26,7 +26,7 @@ class DynamicTFBroadcaster(Node):
         t.transform.translation.z = 0.05  # Example: LIDAR is 5cm above base_link
         t.transform.rotation.w = 1.0  # No rotation
         self.tf_broadcaster.sendTransform(t)
-        
+
     def publish_odom(self):
         msg = Odometry()
         msg.header.stamp = self.get_clock().now().to_msg()

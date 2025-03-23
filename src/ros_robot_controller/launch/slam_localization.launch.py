@@ -116,8 +116,8 @@ def generate_launch_description():
         # IMU Odometry node
         Node(
             package='ros_robot_controller',
-            executable='imu_odom_node',
-            name='imu_odom',
+            executable='odom_node',
+            name='odom_node',
             output='screen'
         ),
 
