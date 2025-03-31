@@ -13,8 +13,9 @@ def generate_launch_description():
             parameters=[{
                 'dev': '/dev/input/js0',  # Xbox controller device
                 'deadzone': 0.05,         # Ignore small movements
-                'autorepeat_rate': 20.0,  # Hz
-            }]
+                'autorepeat_rate': 25.0,  # Hz
+            }],
+            
         ),
         
         # Xbox controller node

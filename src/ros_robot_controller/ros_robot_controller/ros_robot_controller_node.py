@@ -165,9 +165,9 @@ class RosRobotController(Node):
             msg = MotorsState()
             msg.data = [
                 MotorState(id=m1, rps=m1rps),
-                MotorState(id=m2, rps=m2rps),
-                MotorState(id=m3, rps=m3rps),
-                MotorState(id=m4, rps=m4rps)
+                MotorState(id=m2, rps=m2rps)
+                # MotorState(id=m3, rps=m3rps),
+                # MotorState(id=m4, rps=m4rps)
             ]
             self.motors_pub.publish(msg)
 
@@ -376,11 +376,12 @@ class RosRobotController(Node):
             msg = MotorsState()
             msg.data = [
                 MotorState(id=m1, rps=m1rps),
-                MotorState(id=m2, rps=m2rps),
-                MotorState(id=m3, rps=m3rps),
-                MotorState(id=m4, rps=m4rps)
+                MotorState(id=m2, rps=m2rps)
+                # MotorState(id=m3, rps=m3rps),
+                # MotorState(id=m4, rps=m4rps)
             ]
-            self.pub_motor_data.publish(msg)
+            print('test')
+            pub.publish(msg)
     def pub_pwm_servo_data(self, pub):
         data = self.board.get_pwm_servo()
         if data is not None:

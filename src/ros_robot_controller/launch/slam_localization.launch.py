@@ -139,9 +139,9 @@ def generate_launch_description():
         ),
 
         # SLAM Toolbox node with lifecycle events
-        start_async_slam_toolbox_node,
-        configure_event,
-        activate_event
+        # start_async_slam_toolbox_node,
+        # configure_event,
+        # activate_event
     ])
 
     return ld

@@ -18,7 +18,7 @@ class OdomCalcNode(Node):
         self.config = utils.load_config(self, config_key='odom_calc_node', config_path=config_path)
 
         # Vehicle parameters from config
-        self.wheel_radius = self.config.get('wheel_radius', 0.05)
+        self.wheel_radius = self.config.get('wheel_radius', 0.03)
         self.wheelbase = self.config.get('wheelbase', 0.18)
         self.servo_pwm_center = self.config.get('servo_pwm_center', 1500)
         self.servo_pwm_range = self.config.get('servo_pwm_range', 1000)
@@ -75,11 +75,13 @@ class OdomCalcNode(Node):
         dt = (current_time - self.last_time).nanoseconds * 1e-9
 
         motor_speeds = {m.id: m.rps for m in msg.data}
-        left_rps = motor_speeds.get(1, 0.0)
-        right_rps = motor_speeds.get(2, 0.0)
+        left_rps = motor_speeds.get(0, 0.0)
+        right_rps = motor_speeds.get(1, 0.0)
+        self.get_logger().info(f"dt: {dt:.4f} s, Left RPS: {left_rps:.2f}, Right RPS: {right_rps:.2f}")
 
         left_speed = left_rps * 2 * math.pi * self.wheel_radius
         right_speed = -right_rps * 2 * math.pi * self.wheel_radius
+        self.get_logger().info(f"Left speed: {left_speed:.2f} m/s, Right speed: {right_speed:.2f} m/s")
         self.v_linear = (left_speed + right_speed) / 2.0
         self.v_angular = self.v_linear * math.tan(self.steering_angle) / self.wheelbase
 

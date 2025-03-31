@@ -1,2 +1,33 @@
-ros_robot_controller:
-  frequency: 10
+ros_robot_controller_node:
+  frequency:
+    all: 10
+    imu: 20
+    encoder: 10
+    servo: 10
+  imu_calibration:
+    accelerometer:
+      bias:
+        x: 0.3273
+        y: -0.3155
+        z: 0.1695
+      scale:
+        x: 1.0
+        y: 1.0
+        z: 1.0
+    gyroscope:
+      bias:
+        x: -1.3350
+        y: -15.6098
+        z: 1.3329
+      scale:
+        x: 1.0
+        y: 1.0
+        z: 1.0
+      unit: degree/s
+
+vehicle_data:
+  wheel_radius: 0.03        # meters
+  wheelbase: 0.18           # meters
+  servo_pwm_center: 1500    # microseconds
+  servo_pwm_range: 1000     # ±microseconds
+  steering_angle_max: 0.8   # 1 for +-90 degrees

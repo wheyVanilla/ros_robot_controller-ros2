@@ -26,7 +26,7 @@ ros_robot_controller_node:
       unit: degree/s
 
 vehicle_data:
-  wheel_radius: 0.05        # meters
+  wheel_radius: 0.035        # meters
   wheelbase: 0.18           # meters
   servo_pwm_center: 1500    # microseconds
   servo_pwm_range: 1000     # ±microseconds
