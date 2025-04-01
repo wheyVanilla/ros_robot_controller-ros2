@@ -31,3 +31,4 @@ vehicle_data:
   servo_pwm_center: 1500    # microseconds
   servo_pwm_range: 1000     # ±microseconds
   steering_angle_max: 0.8   # 1 for +-90 degrees
+  correction_factor: 1.106   # correction factor for the calculated speed
