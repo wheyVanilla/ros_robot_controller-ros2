@@ -21,10 +21,14 @@ class DynamicTFBroadcaster(Node):
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "base_link"
         t.child_frame_id = "laser"
-        t.transform.translation.x = 0.1 # Example: LIDAR is 10cm in front of base_link
+        t.transform.translation.x = 0.0 # Example: LIDAR is 10cm in front of base_link
         t.transform.translation.y = 0.0
-        t.transform.translation.z = 0.05  # Example: LIDAR is 5cm above base_link
-        t.transform.rotation.w = 1.0  # No rotation
+        t.transform.translation.z = 0.0  # Example: LIDAR is 5cm above base_link
+        # t.transform.rotation.w = 1.0  # No rotation
+        t.transform.rotation.x = 0.0
+        t.transform.rotation.y = 0.0
+        t.transform.rotation.z = 1.0  # sin(180/2) = 1
+        t.transform.rotation.w = 0.0  # cos(180/2) = 0
         self.tf_broadcaster.sendTransform(t)
 
     def publish_odom(self):

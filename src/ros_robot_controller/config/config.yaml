@@ -24,11 +24,18 @@ ros_robot_controller_node:
         y: 1.0
         z: 1.0
       unit: degree/s
+  imu_parameters:
+    orientation_covariance: [0.0012, 0, 0,  # roll (±2°)
+                           0, 0.0012, 0,    # pitch (±2°)
+                           0, 0, 0.0012]    # yaw (±2°)
+    angular_velocity_covariance: [0.0076, 0, 0,  # roll rate
+                                0, 0.0076, 0,    # pitch rate
+                                0, 0, 0.0076]    # yaw rate    
 
 vehicle_data:
   wheel_radius: 0.035        # meters
-  wheelbase: 0.18           # meters
+  wheelbase: 0.17           # meters
   servo_pwm_center: 1500    # microseconds
-  servo_pwm_range: 1000     # ±microseconds
-  steering_angle_max: 0.8   # 1 for +-90 degrees
+  servo_pwm_range: 2000     # ±microseconds
+  steering_angle_max: 1.0   # 1 for +-90 degrees
   correction_factor: 1.106   # correction factor for the calculated speed

@@ -11,6 +11,16 @@ data = {
     'Real':       [1.0, 2.0, 3.0, 1.0, 2.06, 3.0, 1.0, 2.08, 2.98, 1.0, 2.0, 3.03, 0.98, 2.02, 2.99],
 }
 
+data = {
+    'Speed (rps)': [0.1]*2 + [1.0]*2 + [2.5]*2,
+    'Calculated': [ 1.05, 2.12, 
+                    1.06, 2.12, 
+                    1.04, 2.06],
+    'Real':       [ 1.0, 2.0, 
+                    1.0, 2.0, 
+                    1.03, 2.01],
+}
+
 df = pd.DataFrame(data)
 
 # Linear regression to get correction factor

@@ -7,9 +7,12 @@ from ros_robot_controller_msgs.msg import MotorsState, MotorState, PWMServoState
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from ctypes import c_uint16 as uint16
 
+
 class XboxControlStation(Node):
     def __init__(self):
         super().__init__('xbox_control_station')
+        self.get_logger().info("Xbox Control Station Node Initialized")
+        
         
         # Create QoS profile for controller
         qos = QoSProfile(
@@ -17,15 +20,17 @@ class XboxControlStation(Node):
             reliability=ReliabilityPolicy.BEST_EFFORT
         )
         
-        
+        # Load parameters from config.yaml
+
         #TODO: make those parameters as configurable
+        
         # Control parameters
-        self.max_speed = 2.0     # Maximum RPS
+        self.max_speed = 1.5     # Maximum RPS
         
         # Servo parameters
         self.center_pwm = 1500   # Center position (90°)
         self.pwm_range = 1000    # PWM range from center (±1000)
-        self.max_turn = 1      # Maximum turn range (0.5 = ±45°)
+        self.max_turn = 0.45      # Maximum turn range (0.5 = ±45°)
         
         # Subscribe to Xbox controller
         self.joy_sub = self.create_subscription(
@@ -52,8 +57,12 @@ class XboxControlStation(Node):
         """Map joystick (-1 to 1) to PWM range (500-2500)"""
         # Limit turn range
         turn_value = max(min(turn_value, self.max_turn), -self.max_turn)
+        # turn_value = turn_value*self.max_turn
+
         # Map to PWM and ensure it's an integer
-        pwm = int(self.center_pwm - (turn_value * self.pwm_range / self.max_turn))
+        pwm = int(self.center_pwm - (turn_value * self.pwm_range))
+ 
+
         # Ensure within bounds
         return max(min(pwm, 2500), 500)
         
@@ -64,6 +73,7 @@ class XboxControlStation(Node):
         
         # Motor control (forward/backward)
         speed = forward * self.max_speed
+    
         motor_msg = MotorsState()
         motor_msg.data = [
             MotorState(id=1, rps=speed),

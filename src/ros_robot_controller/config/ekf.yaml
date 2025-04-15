@@ -39,17 +39,16 @@ ekf_filter:
         use_odometry: true
             # values is x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az. Note that not some message types
         odom0: /odom
-        odom0_config: [true, true, false,
-                       false, false, false,
-                       true, true, false,
-                       false, false, true,
-                       false, false, false]
+        odom0_config: [true,  true,  false,  # x, y, z
+                      false, false, false,    # roll, pitch, yaw
+                      true,  true,  false,    # vx, vy, vz
+                      false, false, false,    # vroll, vpitch, vyaw
+                      false, false, false]    # ax, ay, az
         imu0: /robot_control/imu
-        imu0_config: [false, false, false,
-                      false, false, false,
-                      false, false, false,
-                      true, true, true,
-                      true, true, true]
-        imu0_differential: false
+        imu0_config: [false, false, false,    # x, y, z
+                     false, false, true,      # roll, pitch, yaw
+                     false, false, false,     # vx, vy, vz
+                     false, false, true,      # vroll, vpitch, vyaw
+                     false, false, false]     # ax, ay, az
+        imu0_differential: true
         imu0_remove_gravity: true
-        imu0_bias_estimation: true

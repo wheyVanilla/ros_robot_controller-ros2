@@ -342,13 +342,15 @@ class RosRobotController(Node):
         msg = Imu()
         msg.header.frame_id = self.IMU_FRAME
         msg.header.stamp = self.clock.now().to_msg()
-        msg.orientation.w = 1.0  # No orientation data from MPU6050
+        msg.orientation.w = 1.0
         msg.orientation.x = 0.0
         msg.orientation.y = 0.0
         msg.orientation.z = 0.0
-        msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0]  # Orientation not provided
-        msg.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
-        msg.linear_acceleration_covariance = [0.0004, 0.0, 0.0, 0.0, 0.0004, 0.0, 0.0, 0.0, 0.004]
+        
+        # Use covariance from config
+        msg.orientation_covariance = self.config['imu_parameters']['orientation_covariance']
+        msg.angular_velocity_covariance = self.config['imu_parameters']['angular_velocity_covariance']
+        
         return msg
     
     def _set_raw_imu_data(self, msg, ax, ay, az, gx, gy, gz):

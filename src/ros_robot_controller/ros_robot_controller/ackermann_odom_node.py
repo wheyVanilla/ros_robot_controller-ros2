@@ -7,6 +7,7 @@ from tf2_ros import TransformBroadcaster
 import math
 from ros_robot_controller_msgs.msg import MotorsState, PWMServoState
 import ros_robot_controller.utils as utils
+from sensor_msgs.msg import Imu
 
 class OdomCalcNode(Node):
     def __init__(self):
@@ -15,15 +16,15 @@ class OdomCalcNode(Node):
         # Declare config path parameter and load config
         self.declare_parameter('config_path', 'src/ros_robot_controller/config/config.yaml')
         config_path = self.get_parameter('config_path').get_parameter_value().string_value
-        self.config = utils.load_config(self, config_key='odom_calc_node', config_path=config_path)
+        self.config = utils.load_config(self, config_key='vehicle_data', config_path=config_path)
 
         # Vehicle parameters from config
-        self.wheel_radius = self.config.get('wheel_radius', 0.03)
-        self.wheelbase = self.config.get('wheelbase', 0.18)
+        self.wheel_radius = self.config.get('wheel_radius', 0.035)
+        self.wheelbase = self.config.get('wheelbase', 0.17)
         self.servo_pwm_center = self.config.get('servo_pwm_center', 1500)
         self.servo_pwm_range = self.config.get('servo_pwm_range', 1000)
-        steering_max_normalized = self.config.get('steering_angle_max', 0.5)
-        self.steering_angle_max = steering_max_normalized * (math.pi / 2)
+        steering_max_normalized = self.config.get('steering_angle_max', 1.0)
+        self.steering_angle_max = steering_max_normalized * (math.pi)
 
         # Covariance from config
         self.pose_covariance = self.config.get('pose_covariance', [
@@ -54,7 +55,12 @@ class OdomCalcNode(Node):
 
         # Subscribers
         self.motor_sub = self.create_subscription(MotorsState, 'robot_control/motors', self.motor_callback, 10)
-        self.servo_sub = self.create_subscription(PWMServoState, 'robot_control/servo', self.servo_callback, 10)
+        self.imu_sub = self.create_subscription(
+            Imu,
+            'robot_control/imu',  # Using corrected IMU data
+            self.imu_callback,
+            10
+        )
 
         # Publisher and TF broadcaster
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
@@ -70,6 +76,16 @@ class OdomCalcNode(Node):
             f"(normalized: {steering_max_normalized})"
         )
 
+    def imu_callback(self, msg):
+        # Use IMU orientation directly if available
+        if msg.orientation.w != 1.0:  # Check if real orientation data exists
+            self.theta = utils.yaw_from_quaternion(msg.orientation)
+        # Use angular velocity as backup/complement
+        self.v_angular = msg.angular_velocity.z
+        
+        # No need to calculate v_angular from steering angle anymore
+        # self.v_angular = -self.v_linear * math.tan(self.steering_angle) / self.wheelbase
+
     def motor_callback(self, msg):
         current_time = self.get_clock().now()
         dt = (current_time - self.last_time).nanoseconds * 1e-9
@@ -77,13 +93,10 @@ class OdomCalcNode(Node):
         motor_speeds = {m.id: m.rps for m in msg.data}
         left_rps = motor_speeds.get(0, 0.0)
         right_rps = motor_speeds.get(1, 0.0)
-        self.get_logger().info(f"dt: {dt:.4f} s, Left RPS: {left_rps:.2f}, Right RPS: {right_rps:.2f}")
 
         left_speed = left_rps * 2 * math.pi * self.wheel_radius
         right_speed = -right_rps * 2 * math.pi * self.wheel_radius
-        self.get_logger().info(f"Left speed: {left_speed:.2f} m/s, Right speed: {right_speed:.2f} m/s")
         self.v_linear = (left_speed + right_speed) / 2.0
-        self.v_angular = self.v_linear * math.tan(self.steering_angle) / self.wheelbase
 
         if dt > 0:
             self.x += self.v_linear * math.cos(self.theta) * dt
@@ -95,12 +108,7 @@ class OdomCalcNode(Node):
         self.last_time = current_time
 
     def servo_callback(self, msg):
-        if msg.id != 1:
-            return
-        self.steering_angle = utils.pwm_to_angle(
-            msg.position, self.servo_pwm_center, self.servo_pwm_range, self.steering_angle_max
-        )
-        self.get_logger().debug(f"Steering angle: {math.degrees(self.steering_angle):.2f}°")
+        pass
 
     def _publish_odom(self, current_time):
         odom = Odometry()

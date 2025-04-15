@@ -1,6 +1,6 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, LogInfo, RegisterEventHandler, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, EmitEvent, LogInfo, RegisterEventHandler, SetEnvironmentVariable, TimerAction
 from launch.conditions import IfCondition
 from launch.events import matches_action
 from launch.substitutions import LaunchConfiguration, AndSubstitution, NotSubstitution
@@ -90,12 +90,33 @@ def generate_launch_description():
         declare_use_lifecycle_manager,
         declare_use_sim_time,
 
-        # Robot controller node
+        # Start IMU node first
         Node(
             package='ros_robot_controller',
             executable='ros_robot_controller',
-            name='robot_node',
-            output='log'
+            name='ros_robot_controller'
+        ),
+        
+        # Wait for IMU to initialize
+        TimerAction(
+            period=2.0,
+            actions=[
+                # Then start odometry
+                Node(
+                    package='ros_robot_controller',
+                    executable='odom_node',
+                    name='odom_node'
+                ),
+                
+                # Then start EKF
+                Node(
+                    package='robot_localization',
+                    executable='ekf_node',
+                    name='ekf_filter_node',
+                    parameters=[{'use_sim_time': False},
+                              ekf_params_file]
+                )
+            ]
         ),
 
         # RPLidar node
@@ -113,14 +134,6 @@ def generate_launch_description():
             }]
         ),
 
-        # IMU Odometry node
-        Node(
-            package='ros_robot_controller',
-            executable='odom_node',
-            name='odom_node',
-            output='screen'
-        ),
-
         # TF Publisher node
         Node(
             package='ros_robot_controller',
@@ -129,19 +142,10 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # EKF Node
-        Node(
-            package='robot_localization',
-            executable='ekf_node',
-            name='ekf_filter',
-            output='screen',
-            parameters=[ekf_params_file]
-        ),
-
         # SLAM Toolbox node with lifecycle events
-        # start_async_slam_toolbox_node,
-        # configure_event,
-        # activate_event
+        start_async_slam_toolbox_node,
+        configure_event,
+        activate_event
     ])
 
     return ld

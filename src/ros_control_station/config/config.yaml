@@ -5,3 +5,9 @@ vehicles:
   - serial_number: "0000000000000000"
     name: "ghost"
     ip: "192.168.1.74"
+
+Controller:
+  max_speed: 1.5
+  center_pwm: 1500
+  pwm_range: 1000
+  max_turn: 0.4 # 36 degrees
