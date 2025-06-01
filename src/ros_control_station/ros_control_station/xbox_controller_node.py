@@ -6,6 +6,11 @@ from sensor_msgs.msg import Joy
 from ros_robot_controller_msgs.msg import MotorsState, MotorState, PWMServoState, SetPWMServoState
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from ctypes import c_uint16 as uint16
+from std_srvs.srv import Trigger
+import os
+import subprocess
+from datetime import datetime
+from slam_toolbox.srv import SerializePoseGraph
 
 
 class XboxControlStation(Node):
@@ -32,6 +37,15 @@ class XboxControlStation(Node):
         self.pwm_range = 1000    # PWM range from center (±1000)
         self.max_turn = 0.45      # Maximum turn range (0.5 = ±45°)
         
+        # Create maps directory if it doesn't exist
+        self.maps_dir = os.path.expanduser('~/maps')
+        try:
+            os.makedirs(self.maps_dir, exist_ok=True)
+            self.get_logger().info(f"Maps directory created/verified at {self.maps_dir}")
+        except Exception as e:
+            self.get_logger().error(f"Failed to create maps directory: {str(e)}")
+            self.maps_dir = None
+        
         # Subscribe to Xbox controller
         self.joy_sub = self.create_subscription(
             Joy,
@@ -52,6 +66,19 @@ class XboxControlStation(Node):
             'manual_control/pwn_servo_set_state',
             1
         )
+        
+        # Track X button state
+        self.x_button_pressed = False
+        
+        # Create service client for map serialization
+        self.serialize_map_client = self.create_client(
+            SerializePoseGraph,
+            '/slam_toolbox/serialize_map'
+        )
+        
+        # Wait for service to be available
+        while not self.serialize_map_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Serialize map service not available, waiting...')
         
     def map_to_pwm(self, turn_value):
         """Map joystick (-1 to 1) to PWM range (500-2500)"""
@@ -91,6 +118,40 @@ class XboxControlStation(Node):
         servo_msg.duration = 0.1
         self.servo_pub.publish(servo_msg)
         
+        # Check X button (index 2) for map saving
+        x_button = msg.buttons[2]
+        if x_button and not self.x_button_pressed:
+            self.save_map()
+        self.x_button_pressed = x_button
+        
+    def save_map(self):
+        try:
+            # Generate timestamp for filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            map_path = f'/home/robot/Documents/maps/map_{timestamp}'
+            
+            self.get_logger().info(f'Requesting map serialization to {map_path}...')
+            
+            # Create request
+            request = SerializePoseGraph.Request()
+            request.filename = map_path
+            
+            # Send request
+            future = self.serialize_map_client.call_async(request)
+            
+            # Wait for response
+            rclpy.spin_until_future_complete(self, future)
+            
+            if future.result() is not None:
+                self.get_logger().info(f'Map successfully serialized to {map_path}')
+            else:
+                self.get_logger().error('Service call failed')
+                
+        except Exception as e:
+            self.get_logger().error(f'Error saving map: {str(e)}')
+            import traceback
+            self.get_logger().error(f'Traceback: {traceback.format_exc()}')
+
 def main(args=None):
     rclpy.init(args=args)
     node = XboxControlStation()

@@ -52,7 +52,8 @@ def generate_launch_description():
                 'use_lifecycle_manager': use_lifecycle_manager,
                 'use_sim_time': use_sim_time
             }
-        ]
+        ],
+        arguments=['--ros-args', '--log-level', 'warn']
     )
 
     # Lifecycle events for automatic configuration and activation

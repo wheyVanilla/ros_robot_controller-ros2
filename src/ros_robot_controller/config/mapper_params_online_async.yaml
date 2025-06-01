@@ -15,7 +15,7 @@ slam_toolbox:
     base_frame: base_link
     scan_topic: /scan
     use_map_saver: true
-    mode: mapping #localization
+    mode: localization #localization
     use_odometry: true  # Set to false if only using LiDAR scan matching
     odometry_topic: /odometry/filtered
     # odometry_topic: /odom
@@ -23,11 +23,9 @@ slam_toolbox:
     use_sim_time: false
     debug_logging: true
 
-    # if you'd like to immediately start continuing a map at a given pose
-    # or at the dock, but they are mutually exclusive, if pose is given
-    # will use pose
-    #map_file_name: test_steve
-    # map_start_pose: [0.0, 0.0, 0.0]
+    # Map loading parameters
+    map_file_name: /home/robot/Documents/maps/map_20250517_111530
+    map_start_pose: [0.0, 0.0, 0.0]
     #map_start_at_dock: true
 
     throttle_scans: 1
