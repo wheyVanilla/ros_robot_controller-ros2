@@ -1,0 +1,27 @@
+[Unit]
+Description=Auto-launch ROS2 Robot Controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=robot
+WorkingDirectory=/home/robot/ros2
+
+# give the network & USB buses a moment to come up
+#ExecStartPre=/bin/sleep 10
+
+# run your script under a login bash so it sources everything exactly
+ExecStart=/bin/bash -l -c '/home/robot/ros2/start_robot.sh'
+
+Restart=on-failure
+RestartSec=5
+
+# lift limits so your IMU callbacks and DDS threads aren't throttled
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

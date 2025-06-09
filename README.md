@@ -46,6 +46,23 @@ ros2 launch ros_control_station ros_control_station.launch.py
 ros2 launch ros_robot_controller slam_localization.launch.py
 ```
 
+## Deployment (Automated)
+
+For easy deployment, you can use the provided script to package, transfer, and build the source code on the target robots.
+
+### Prerequisites
+The script requires the robot's sudo password to set up services. Set it as an environment variable on your control station before running the script:
+```bash
+export SUDO_PASS='your_robot_sudo_password'
+```
+
+### How to Run
+To deploy to one or more robots, run the following command from your workspace root, replacing `<robot_ip>` with your robot's actual IP address:
+```bash
+./src/ros_control_station/scripts/deploy/deploy_to_robots.sh <robot_ip_1> [robot_ip_2] ...
+```
+The script will handle building the code and setting up the systemd service to run the robot's software on startup.
+
 ## Package Structure
 
 ### ros_robot_controller (Robot Side)
