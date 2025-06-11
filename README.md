@@ -4,6 +4,9 @@ A ROS2-based robot control system featuring ackerman drive, servo steering, and 
 - `ros_robot_controller`: Hardware interface and robot control (runs on Raspberry Pi), interfacing STM32 controller
 - `ros_control_station`: Remote control interface (runs on laptop)
 
+![IMG_9015](https://github.com/user-attachments/assets/3781c054-fcaa-4ea5-bb04-8450feb3daa4)
+
+
 ## System Requirements
 
 ### Hardware
